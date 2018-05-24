@@ -1,10 +1,12 @@
 const PageModel = require('./page.model');
+const DomainModel = require('./domain.model');
 
 class PageContainer{
 
     constructor(){
         this.pages = [];
         this.incorrectDomains = ['vk.com', 'youtube.com', 'google.com'];
+        this.domains = [];
     }
 
     clearUrl(url){
@@ -19,7 +21,7 @@ class PageContainer{
                 msg: "Url not valid"
             };
         }
-        // return url.startsWith('http://') || url.startsWith('https://');
+        
         let domain = this.getDomain(url);
 
         if(this.incorrectDomains.indexOf(domain) != -1){
@@ -40,6 +42,24 @@ class PageContainer{
                         .split('/');
 
         return split[0];
+    }
+
+    canCommunicate(url, id1, id2){
+        let page = this.pages.find((v, i, a) => v.url === url);
+        if(!page) return false;
+        let f_c1 = page.clients.find((v, i, a) => v.id == id1);
+        let f_c2 = page.clients.find((v, i, a) => v.id == id2);
+        return f_c1 && f_c2;
+    }
+
+    getClientsFromDomain(url, callback){
+        let domain_url = this.getDomain(url);
+        let domain = this.domains.find((v, i, a) => v.url === domain_url);
+        if(domain){
+            domain.pages.forEach((p)=>{
+                p.clients.forEach((c)=>callback(c));
+            })
+        }
     }
 
     getClientsFromURL(url, callback){
@@ -88,6 +108,18 @@ class PageContainer{
         }else{
             page = new PageModel(url);
             this.pages.push(page);
+            let domain_url = this.getDomain(url);
+
+            let finded_domain = this.domains.find((v, i, a) => v.url === domain_url);
+            
+            if(finded_domain){
+                finded_domain.setPage(page);
+            }else{
+                let domain = new DomainModel(domain_url);
+                domain.setPage(page);
+                this.domains.push(domain);
+                console.log("Domain [" + domain.url + "] was be created!");
+            }
         }
 
         page.setClient(client);
@@ -122,6 +154,16 @@ class PageContainer{
 
         if(page.clients.length == 0){
             let p_index = this.pages.indexOf(page);
+            let domain_url = this.getDomain(page.url);
+            let domain = this.domains.find((v, i, a) => v.url === domain_url);
+            if(domain){
+                domain.removePage(page);
+                if(domain.isEmpty()){
+                    let d_index = this.domains.indexOf(domain);
+                    this.domains.splice(d_index, 1);
+                    console.log("Domain [" + domain.url + "] was be removed!");
+                }
+            }
             this.pages.splice(p_index, 1);
         }
 

@@ -34,6 +34,10 @@ class Server{
         console.log('Client was deleted [' + this.clients.length + ']');
     }
 
+    registerClient(client, req){
+
+    }
+
     start(server){
         let _this = this;
 
@@ -84,11 +88,6 @@ class Server{
                 client.time_z = Math.ceil((req.time - (Date.now() / 1000)) / (3600));
 
                 _this.clients.push(client);
-
-                logJson({
-                    'client_length': _this.clients.length,
-                    'new_client': client
-                });
 
                 _this.sockets[client.id] = socket;
                 _this.client_pages[client.id] = [];
@@ -218,17 +217,23 @@ class Server{
 
                 msg.time = Math.ceil(Date.now() / 1000);
 
-                if(req.data.to === ''){
-                    msg.to = 'room';
+                if(req.data.to === 'page'){
                     _this.pageContainer.getClientsFromURL(msg.url, (c)=>{
                         if(_this.sockets[c.id]){
                             _this.sockets[c.id].emit("new_message", new Responce('OK', msg, 'ok'));
                         }
                     });
+                }else if(req.data.to === 'domain'){
+                    _this.pageContainer.getClientsFromDomain(msg.url, (c)=>{
+                        if(_this.sockets[c.id])
+                            _this.sockets[c.id].emit("new_message", new Responce('OK', msg, 'ok'));
+                    })
                 }else if(_this.sockets[req.data.from] && _this.sockets[req.data.to]){
-                    let resp = new Responce('OK', msg, 'ok');
-                    _this.sockets[req.data.from].emit("new_message", resp);
-                    _this.sockets[req.data.to].emit("new_message", resp);
+                    if(_this.pageContainer.canCommunicate(msg.url, msg.from, msg.to)){
+                        let resp = new Responce('OK', msg, 'ok');
+                        _this.sockets[req.data.from].emit("new_message", resp);
+                        _this.sockets[req.data.to].emit("new_message", resp);
+                    }
                 }
             })
         });
