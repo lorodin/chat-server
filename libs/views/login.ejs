@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><%=title%></title>
+    <link rel="stylesheet" href="css/style.css"/>
+    <link rel="stylesheet" href="css/bootstrap.min.css"/>
+    <script src="js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class='login-panel'>
+        <h1><%=title%></h1>
+        <p>Fill in the form below to sign in!</p>
+        <% include messages %>
+        <form action="/login" method="POST">
+            <p>
+                <input class='form-control' type='text' name='name' placeholder="Username" />
+            </p>
+            <p>
+                <input type='password' class='form-control' name="pass" placeholder="Password" />
+            </p>
+            <input type="submit" value='Login' class='btn btn-success' />
+        </form>
+    </div>
+</body>
+</html>

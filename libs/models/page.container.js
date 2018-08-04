@@ -5,8 +5,15 @@ class PageContainer{
 
     constructor(){
         this.pages = [];
-        this.incorrectDomains = ['vk.com', 'youtube.com', 'google.com'];
+        
+        this.incorrectDomains = [];
         this.domains = [];
+    }
+
+    setInvalidDomains(invalidDomains){
+        this.incorrectDomains = invalidDomains;
+        console.log('New invalid domains');
+        console.log(this.incorrectDomains);
     }
 
     clearUrl(url){
@@ -41,7 +48,10 @@ class PageContainer{
                         .replace('https://', '')
                         .split('/');
 
-        return split[0];
+        let d_name = split[0].replace('www.', '');
+        let d_s = d_name.split('.');
+        
+        return d_s[0];
     }
 
     canCommunicate(url, id1, id2){
@@ -56,9 +66,12 @@ class PageContainer{
         let domain_url = this.getDomain(url);
         let domain = this.domains.find((v, i, a) => v.url === domain_url);
         if(domain){
-            domain.pages.forEach((p)=>{
-                p.clients.forEach((c)=>callback(c));
-            })
+            if(domain.pages && domain.pages.length > 0){
+                domain.pages[0].clients.forEach((c) => callback(c));
+            }
+            // domain.pages.forEach((p)=>{
+            //     p.clients.forEach((c)=>callback(c));
+            // })
         }
     }
 

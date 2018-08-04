@@ -2,12 +2,15 @@
 // const app = express();
 // const http = require('http');//.Server(app);
 require('node-json-color-stringify');
-
+const fs = require('fs');
 const io = require('socket.io');//(server);
 const ClientModel = require('./models/client.model');
 const uniqid = require('uniqid');
 const Responce = require('./models/responce.model');
 const PageContainer = require('./models/page.container');
+
+let fileContent = fs.readFileSync('data/invalid-domains.txt', 'utf-8');
+let domains = fileContent.split('\r\n');
 
 function logJson(data){
     console.log(JSON.colorStringify(data));
@@ -19,6 +22,17 @@ class Server{
         this.sockets = {};
         this.client_pages = {};
         this.pageContainer = new PageContainer();
+        this.pageContainer.setInvalidDomains(domains);
+        let _this = this;
+
+        fs.watchFile('data/invalid-domains.txt', function(curr,prev) {
+            if (curr.mtime != prev.mtime) {
+                let fileContent = fs.readFileSync('data/invalid-domains.txt', 'utf-8');
+                let domains = fileContent.split('\r\n');
+                _this.pageContainer.setInvalidDomains(domains);
+            }   
+        });
+
     }
 
     removeClient(client){
@@ -80,13 +94,12 @@ class Server{
 
                 console.log('register new user');
                 console.log(req);
-                console.log(req.time);
-
+                
                 client.setId(uniqid());
                 client.setName(req.data.name);
                 
-                client.time_z = Math.ceil((req.time - (Date.now() / 1000)) / (3600));
-
+                client.time_z = Math.round((req.time - Date.now())/ 3600000);
+                
                 _this.clients.push(client);
 
                 _this.sockets[client.id] = socket;
@@ -205,6 +218,12 @@ class Server{
                     new Responce('OK', req.data, 'ok'));
             });
 
+            socket.on('get_invalid_domains', function(req){
+                console.log('get_invalid_domains');
+                _this.sockets[client.id].emit('set_invalid_domains', 
+                                              new Responce('OK', _this.pageContainer.incorrectDomains, 'ok'));
+            });
+
             socket.on('send_message', function(req){
                 if(req == undefined || req.data == undefined) req = JSON.parse(req);
 
@@ -215,7 +234,9 @@ class Server{
 
                 let msg = req.data;
 
-                msg.time = Math.ceil(Date.now() / 1000);
+                msg.time = Math.round(req.time - 3600000 * client.time_z);
+
+                msg.name = client.name;
 
                 if(req.data.to === 'page'){
                     _this.pageContainer.getClientsFromURL(msg.url, (c)=>{
